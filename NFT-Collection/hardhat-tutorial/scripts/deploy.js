@@ -31,13 +31,22 @@
 // });
 const { ethers } = require("hardhat");
 require("dotenv").config({ path: ".env" });
-const { WHITELIST_CONTRACT_ADDRESS, METADATA_URL } = require("../constants");
+const { WHITELIST_CONTRACT_ADDRESS, METADATA_URL, CRYPTODEVS_NFT_CONTRACT_ADDRESS } = require("../constants");
 
 async function main() {
   // Address of the whitelist contract that you deployed in the previous module
   const whitelistContract = WHITELIST_CONTRACT_ADDRESS;
   // URL from where we can extract the metadata for a Crypto Dev NFT
   const metadataURL = METADATA_URL;
+  // Deploy the FakeNFTMarketplace contract first
+  const FakeNFTMarketplace = await ethers.getContractFactory(
+    "FakeNFTMarketplace"
+  );
+  const fakeNftMarketplace = await FakeNFTMarketplace.deploy();
+  await fakeNftMarketplace.deployed();
+
+  console.log("FakeNFTMarketplace deployed to: ", fakeNftMarketplace.address);
+
   /*
   A ContractFactory in ethers.js is an abstraction used to deploy new smart contracts,
   so cryptoDevsContract here is a factory for instances of our CryptoDevs contract.
@@ -56,6 +65,21 @@ async function main() {
     deployedCryptoDevsContract.address
   );
 }
+// Now deploy the CryptoDevsDAO contract
+const CryptoDevsDAO = await ethers.getContractFactory("CryptoDevsDAO");
+const cryptoDevsDAO = await CryptoDevsDAO.deploy(
+  fakeNftMarketplace.address,
+  CRYPTODEVS_NFT_CONTRACT_ADDRESS,
+  {
+    // This assumes your account has at least 1 ETH in it's account
+    // Change this value as you want
+    value: ethers.utils.parseEther("1"),
+  }
+);
+await cryptoDevsDAO.deployed();
+
+console.log("CryptoDevsDAO deployed to: ", cryptoDevsDAO.address);
+
 
 // Call the main function and catch if there is any error
 main()
